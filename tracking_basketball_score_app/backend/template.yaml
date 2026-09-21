@@ -1,0 +1,102 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: ShotLab serverless API
+
+Parameters:
+  FirebaseProjectId:
+    Type: String
+
+Globals:
+  Function:
+    Runtime: python3.12
+    Architectures: [arm64]
+    Timeout: 15
+    MemorySize: 256
+    Environment:
+      Variables:
+        TABLE_NAME: !Ref ShotLabTable
+        FIREBASE_PROJECT_ID: !Ref FirebaseProjectId
+
+Resources:
+  ShotLabApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      CorsConfiguration:
+        AllowOrigins: ['*']
+        AllowHeaders: [authorization, content-type]
+        AllowMethods: [GET, POST, OPTIONS]
+
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: api.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ShotLabTable
+      Events:
+        SaveSession:
+          Type: HttpApi
+          Properties: {ApiId: !Ref ShotLabApi, Path: /sessions, Method: POST}
+        SaveShot:
+          Type: HttpApi
+          Properties: {ApiId: !Ref ShotLabApi, Path: /shots, Method: POST}
+        ListFriends:
+          Type: HttpApi
+          Properties: {ApiId: !Ref ShotLabApi, Path: /friends, Method: GET}
+        AddFriend:
+          Type: HttpApi
+          Properties: {ApiId: !Ref ShotLabApi, Path: /friends, Method: POST}
+        CreateChallenge:
+          Type: HttpApi
+          Properties: {ApiId: !Ref ShotLabApi, Path: /challenges, Method: POST}
+        Leaderboard:
+          Type: HttpApi
+          Properties: {ApiId: !Ref ShotLabApi, Path: /leaderboard, Method: GET}
+
+  QuestJobFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: quest_job.handler
+      Timeout: 60
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ShotLabTable
+      Events:
+        Daily:
+          Type: ScheduleV2
+          Properties:
+            ScheduleExpression: rate(1 day)
+
+  ShotLabTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - {AttributeName: PK, AttributeType: S}
+        - {AttributeName: SK, AttributeType: S}
+        - {AttributeName: GSI1PK, AttributeType: S}
+        - {AttributeName: GSI1SK, AttributeType: S}
+        - {AttributeName: GSI2PK, AttributeType: S}
+        - {AttributeName: GSI2SK, AttributeType: S}
+      KeySchema:
+        - {AttributeName: PK, KeyType: HASH}
+        - {AttributeName: SK, KeyType: RANGE}
+      GlobalSecondaryIndexes:
+        - IndexName: LeaderboardIndex
+          KeySchema:
+            - {AttributeName: GSI1PK, KeyType: HASH}
+            - {AttributeName: GSI1SK, KeyType: RANGE}
+          Projection: {ProjectionType: ALL}
+        - IndexName: EmailIndex
+          KeySchema:
+            - {AttributeName: GSI2PK, KeyType: HASH}
+            - {AttributeName: GSI2SK, KeyType: RANGE}
+          Projection: {ProjectionType: ALL}
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+Outputs:
+  ApiUrl:
+    Value: !Sub https://${ShotLabApi}.execute-api.${AWS::Region}.amazonaws.com
