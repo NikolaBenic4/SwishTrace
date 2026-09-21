@@ -7,6 +7,7 @@ import '../../models/court_calibration.dart';
 import '../../models/court_zone.dart';
 import '../../models/training_mode.dart';
 import '../../models/training_session.dart';
+import '../../models/training_level.dart';
 import '../../models/online_models.dart';
 import '../../models/shot_chart_entry.dart';
 import '../../services/account_storage.dart';
@@ -23,11 +24,13 @@ import '../session_detail/session_detail_screen.dart';
 class LiveSessionScreen extends StatefulWidget {
   const LiveSessionScreen({
     required this.mode,
+    this.level,
     this.showDistanceSetupOnOpen = false,
     super.key,
   });
 
   final TrainingMode mode;
+  final TrainingLevel? level;
   final bool showDistanceSetupOnOpen;
 
   @override
@@ -38,6 +41,7 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
   int makes = 0;
   int misses = 0;
   int streak = 0;
+  int _bestStreak = 0;
   int _elapsedSeconds = 0;
   final List<int> _makeFlightTimesMs = [];
   final List<int> _missFlightTimesMs = [];
@@ -97,6 +101,11 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
     _sessionTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted && isTracking) {
         setState(() => _elapsedSeconds += 1);
+        final timeLimit = widget.level?.timeLimitSeconds;
+        if (timeLimit != null && _elapsedSeconds >= timeLimit) {
+          setState(() => isTracking = false);
+          _finishSession();
+        }
       }
     });
     _shotDetectorService.initialize();
@@ -328,7 +337,7 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
             hasAttempts
                 ? 'Save $makes makes from $attempts attempts to your history?'
                 : 'No shots were recorded. Save this session and its camera '
-                    'detection diagnostics so you can review what happened?',
+                      'detection diagnostics so you can review what happened?',
           ),
           actions: [
             TextButton(
@@ -377,6 +386,7 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
       endedAt: endedAt,
       makes: makes,
       misses: misses,
+      bestStreak: _bestStreak,
       durationSeconds: _elapsedSeconds,
       distanceMeters: _courtCalibration?.distanceMeters,
       courtZone: _courtZone,
@@ -404,6 +414,10 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
         DeviceOrientation.portraitUp,
       ]);
       if (!mounted) return;
+      if (widget.level != null) {
+        Navigator.of(context).pop(session);
+        return;
+      }
       Navigator.of(context).pushReplacement<bool, bool>(
         MaterialPageRoute(
           builder: (_) => SessionDetailScreen(session: session),
@@ -782,6 +796,7 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
       if (result == ShotResult.make) {
         makes += 1;
         streak += 1;
+        _bestStreak = _bestStreak < streak ? streak : _bestStreak;
         _makeFlightTimesMs.add(flightTimeMs);
       } else {
         misses += 1;
@@ -811,6 +826,14 @@ class _LiveSessionScreenState extends State<LiveSessionScreen> {
           duration: const Duration(milliseconds: 900),
         ),
       );
+
+    final level = widget.level;
+    if (level != null && attempts >= level.attemptLimit) {
+      setState(() => isTracking = false);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _finishSession();
+      });
+    }
 
     final onlineAccount = _onlineAccount;
     if (onlineAccount != null && _onlineApiService.configuration.canSync) {

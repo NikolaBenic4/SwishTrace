@@ -9,6 +9,7 @@ class TrainingSession {
     required this.endedAt,
     required this.makes,
     required this.misses,
+    this.bestStreak = 0,
     required this.durationSeconds,
     this.distanceMeters,
     this.courtZone,
@@ -30,6 +31,7 @@ class TrainingSession {
       endedAt: DateTime.parse(json['endedAt']! as String),
       makes: json['makes']! as int,
       misses: json['misses']! as int,
+      bestStreak: (json['bestStreak'] as num?)?.toInt() ?? 0,
       durationSeconds: json['durationSeconds']! as int,
       distanceMeters: (json['distanceMeters'] as num?)?.toDouble(),
       courtZone: CourtZone.fromName(json['courtZone'] as String?),
@@ -52,6 +54,7 @@ class TrainingSession {
   final DateTime endedAt;
   final int makes;
   final int misses;
+  final int bestStreak;
   final int durationSeconds;
   final double? distanceMeters;
   final CourtZone? courtZone;
@@ -87,6 +90,7 @@ class TrainingSession {
       'endedAt': endedAt.toIso8601String(),
       'makes': makes,
       'misses': misses,
+      'bestStreak': bestStreak,
       'durationSeconds': durationSeconds,
       'distanceMeters': distanceMeters,
       'courtZone': courtZone?.name,

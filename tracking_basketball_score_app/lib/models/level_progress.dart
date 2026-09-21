@@ -35,7 +35,7 @@ class LevelProgress {
       currentLevel:
           (json['currentLevel'] as num?)?.toInt().clamp(
             1,
-            levelCatalog.length,
+            levelCatalog.length + 1,
           ) ??
           1,
       hearts: (json['hearts'] as num?)?.toInt().clamp(0, 3) ?? 3,

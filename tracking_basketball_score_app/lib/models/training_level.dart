@@ -37,8 +37,15 @@ class TrainingLevel {
     required int bestStreak,
   }) {
     final attempts = makes + misses;
-    if (makes < targetMakes || bestStreak < requiredStreak) {
-      return LevelResult.failed(attempts: attempts);
+    if (attempts > attemptLimit ||
+        makes < targetMakes ||
+        bestStreak < requiredStreak) {
+      return LevelResult.failed(
+        attempts: attempts,
+        makes: makes,
+        misses: misses,
+        bestStreak: bestStreak,
+      );
     }
 
     final stars = misses <= threeStarMisses
@@ -67,12 +74,13 @@ class LevelResult {
     required this.attempts,
   });
 
-  const LevelResult.failed({required this.attempts})
-    : passed = false,
-      stars = 0,
-      makes = 0,
-      misses = 0,
-      bestStreak = 0;
+  const LevelResult.failed({
+    required this.attempts,
+    this.makes = 0,
+    this.misses = 0,
+    this.bestStreak = 0,
+  }) : passed = false,
+       stars = 0;
 
   final bool passed;
   final int stars;

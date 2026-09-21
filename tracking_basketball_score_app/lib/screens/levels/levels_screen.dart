@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../../models/level_progress.dart';
 import '../../models/training_level.dart';
+import '../../models/training_mode.dart';
+import '../../models/training_session.dart';
 import '../../services/level_progress_storage.dart';
+import '../live_session/live_session_screen.dart';
 
 class LevelsScreen extends StatefulWidget {
   const LevelsScreen({super.key});
@@ -24,7 +27,7 @@ class _LevelsScreenState extends State<LevelsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Levels')),
+      appBar: AppBar(title: const Text('Challenges')),
       body: FutureBuilder<LevelProgress>(
         future: _progress,
         builder: (context, snapshot) {
@@ -56,12 +59,30 @@ class _LevelsScreenState extends State<LevelsScreen> {
     if (level.number != progress.currentLevel || !progress.hasAttemptLeft) {
       return;
     }
-    final result = await showDialog<LevelResult>(
-      context: context,
-      builder: (_) => _LevelAttemptDialog(level: level),
+    final session = await Navigator.of(context).push<TrainingSession>(
+      MaterialPageRoute(
+        builder: (_) => LiveSessionScreen(
+          mode: TrainingMode(
+            title: 'Level ${level.number}: ${level.title}',
+            subtitle: level.description,
+            icon: Icons.emoji_events,
+            accent: const Color(0xFFD49A19),
+            metrics: 'Camera-tracked level attempt',
+            badge: 'LEVEL ${level.number}',
+            destination: TrainingModeDestination.liveCamera,
+            instructions: [level.description],
+          ),
+          level: level,
+        ),
+      ),
     );
-    if (result == null || !mounted) return;
+    if (session == null || !mounted) return;
 
+    final result = level.score(
+      makes: session.makes,
+      misses: session.misses,
+      bestStreak: session.bestStreak,
+    );
     final updated = progress.applyResult(level, result);
     await _storage.saveProgress(updated);
     if (!mounted) return;
@@ -228,102 +249,6 @@ class _Stars extends StatelessWidget {
   }
 }
 
-class _LevelAttemptDialog extends StatefulWidget {
-  const _LevelAttemptDialog({required this.level});
-
-  final TrainingLevel level;
-
-  @override
-  State<_LevelAttemptDialog> createState() => _LevelAttemptDialogState();
-}
-
-class _LevelAttemptDialogState extends State<_LevelAttemptDialog> {
-  final _makesController = TextEditingController();
-  final _missesController = TextEditingController();
-  final _streakController = TextEditingController();
-
-  @override
-  void dispose() {
-    _makesController.dispose();
-    _missesController.dispose();
-    _streakController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final level = widget.level;
-    return AlertDialog(
-      title: Text('Level ${level.number}: ${level.title}'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(level.description),
-            const SizedBox(height: 14),
-            _NumberField(controller: _makesController, label: 'Makes'),
-            _NumberField(controller: _missesController, label: 'Misses'),
-            _NumberField(controller: _streakController, label: 'Best streak'),
-            const SizedBox(height: 4),
-            Text(
-              'Maximum ${level.attemptLimit} total tries for this level.',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(onPressed: _submit, child: const Text('Submit attempt')),
-      ],
-    );
-  }
-
-  void _submit() {
-    final makes = int.tryParse(_makesController.text) ?? -1;
-    final misses = int.tryParse(_missesController.text) ?? -1;
-    final bestStreak = int.tryParse(_streakController.text) ?? -1;
-    final attempts = makes + misses;
-    if (makes < 0 ||
-        misses < 0 ||
-        bestStreak < 0 ||
-        attempts > widget.level.attemptLimit) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Enter valid totals within ${widget.level.attemptLimit} tries.',
-          ),
-        ),
-      );
-      return;
-    }
-    Navigator.pop(
-      context,
-      widget.level.score(makes: makes, misses: misses, bestStreak: bestStreak),
-    );
-  }
-}
-
-class _NumberField extends StatelessWidget {
-  const _NumberField({required this.controller, required this.label});
-
-  final TextEditingController controller;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return TextField(
-      controller: controller,
-      keyboardType: TextInputType.number,
-      decoration: InputDecoration(labelText: label),
-    );
-  }
-}
-
 class _ResultDialog extends StatelessWidget {
   const _ResultDialog({required this.result, required this.level});
 
@@ -338,8 +263,8 @@ class _ResultDialog extends StatelessWidget {
       ),
       content: Text(
         result.passed
-            ? '${result.stars} stars earned. ${result.stars == 3 ? 'Perfect score: one heart restored.' : 'Keep building your streak.'}'
-            : 'Reach ${level.targetMakes} makes with a ${level.requiredStreak}-shot streak within ${level.attemptLimit} tries.',
+            ? '${result.stars} stars earned from ${result.makes} makes and ${result.misses} misses. ${result.stars == 3 ? 'Perfect score: one heart restored.' : 'Keep building your streak.'}'
+            : 'The camera recorded ${result.makes} makes and ${result.misses} misses. Reach ${level.targetMakes} makes with a ${level.requiredStreak}-shot streak within ${level.attemptLimit} tries.',
       ),
       actions: [
         FilledButton(

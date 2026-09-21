@@ -12,6 +12,7 @@ void main() {
       endedAt: DateTime.utc(2026, 6, 15, 18, 10),
       makes: 12,
       misses: 8,
+      bestStreak: 5,
       durationSeconds: 600,
       distanceMeters: 6.75,
       courtZone: CourtZone.rightWing,
@@ -38,6 +39,7 @@ void main() {
     expect(restored.id, session.id);
     expect(restored.attempts, 20);
     expect(restored.percentage, 60);
+    expect(restored.bestStreak, 5);
     expect(restored.distanceMeters, 6.75);
     expect(restored.courtZone, CourtZone.rightWing);
     expect(restored.makeFlightTimesMs, [450, 500]);

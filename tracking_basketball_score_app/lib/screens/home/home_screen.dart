@@ -45,20 +45,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       TrainingMode(
-        title: 'Levels',
-        subtitle: 'Build your game through 30 progressive shooting challenges.',
-        icon: Icons.emoji_events,
-        accent: const Color(0xFFD49A19),
-        metrics: '3 daily attempts | earn stars and hearts',
-        badge: '30 LEVELS',
-        destination: TrainingModeDestination.levels,
-        instructions: const [
-          'Start with the first unlocked challenge and build a streak.',
-          'Earn up to 3 stars based on makes, misses, and consistency.',
-          'Perfect scores restore one heart, up to three hearts.',
-        ],
-      ),
-      TrainingMode(
         title: 'Form Session',
         subtitle: 'Analyze wrist release and body form with pose tracking.',
         icon: Icons.accessibility_new,
@@ -97,6 +83,20 @@ class _HomeScreenState extends State<HomeScreen> {
         instructions: const [
           'Sign in to your SwishTrace account.',
           'Add a friend and send a makes challenge.',
+        ],
+      ),
+      TrainingMode(
+        title: 'Challenges',
+        subtitle: 'Build your game through 30 progressive shooting challenges.',
+        icon: Icons.emoji_events,
+        accent: const Color(0xFFD49A19),
+        metrics: '3 daily attempts | earn stars and hearts',
+        badge: '30 CHALLENGES',
+        destination: TrainingModeDestination.levels,
+        instructions: const [
+          'Start with the first unlocked challenge and build a streak.',
+          'Earn up to 3 stars based on makes, misses, and consistency.',
+          'Perfect scores restore one heart, up to three hearts.',
         ],
       ),
     ];
