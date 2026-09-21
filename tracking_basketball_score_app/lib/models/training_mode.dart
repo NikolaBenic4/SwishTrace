@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 
-enum TrainingModeDestination { liveCamera, distanceCamera, online, unavailable }
+enum TrainingModeDestination {
+  liveCamera,
+  distanceCamera,
+  online,
+  levels,
+  unavailable,
+}
 
 class TrainingMode {
   const TrainingMode({

@@ -8,12 +8,14 @@ class ModeCard extends StatelessWidget {
     required this.mode,
     this.onSessionSaved,
     this.onOpenOnline,
+    this.onOpenLevels,
     super.key,
   });
 
   final TrainingMode mode;
   final VoidCallback? onSessionSaved;
   final VoidCallback? onOpenOnline;
+  final VoidCallback? onOpenLevels;
 
   @override
   Widget build(BuildContext context) {
@@ -104,6 +106,9 @@ class ModeCard extends StatelessWidget {
     switch (mode.destination) {
       case TrainingModeDestination.online:
         onOpenOnline?.call();
+        return;
+      case TrainingModeDestination.levels:
+        onOpenLevels?.call();
         return;
       case TrainingModeDestination.unavailable:
         await showModalBottomSheet<void>(

@@ -5,6 +5,7 @@ import '../../models/training_session.dart';
 import '../../services/session_storage.dart';
 import '../social/social_screen.dart';
 import '../profile/profile_screen.dart';
+import '../levels/levels_screen.dart';
 import 'widgets/home_header.dart';
 import 'widgets/mode_card.dart';
 import 'widgets/session_summary_card.dart';
@@ -41,6 +42,20 @@ class _HomeScreenState extends State<HomeScreen> {
           'Keep the shooter, ball, and rim visible.',
           'SwishTrace automatically records makes, misses, and flight time.',
           'Press Start and shoot freely without choosing a court spot.',
+        ],
+      ),
+      TrainingMode(
+        title: 'Levels',
+        subtitle: 'Build your game through 30 progressive shooting challenges.',
+        icon: Icons.emoji_events,
+        accent: const Color(0xFFD49A19),
+        metrics: '3 daily attempts | earn stars and hearts',
+        badge: '30 LEVELS',
+        destination: TrainingModeDestination.levels,
+        instructions: const [
+          'Start with the first unlocked challenge and build a streak.',
+          'Earn up to 3 stars based on makes, misses, and consistency.',
+          'Perfect scores restore one heart, up to three hearts.',
         ],
       ),
       TrainingMode(
@@ -110,6 +125,7 @@ class _HomeScreenState extends State<HomeScreen> {
             mode: mode,
             onSessionSaved: _reloadSessions,
             onOpenOnline: _openOnline,
+            onOpenLevels: _openLevels,
           ),
           const SizedBox(height: 12),
         ],
@@ -127,6 +143,12 @@ class _HomeScreenState extends State<HomeScreen> {
     Navigator.of(
       context,
     ).push(MaterialPageRoute<void>(builder: (_) => const SocialScreen()));
+  }
+
+  void _openLevels() {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => const LevelsScreen()));
   }
 
   void _openProfile() {
